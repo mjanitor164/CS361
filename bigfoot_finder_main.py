@@ -58,7 +58,7 @@ def create_GUI():
     #----Page header label Widget----#
     headerLabel = QLabel("Bigfoot Tracker! Your go-to Bigfoot finding tool")
     headerLabel.setAlignment(QtCore.Qt.AlignCenter)
-    headerLabel.setFont(QtGui.QFont("Times", 15, QtGui.QFont.Bold))
+    headerLabel.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
     grid_layout.addWidget(headerLabel, 0, 1)
 
     #----Function to close the program for close button----#
