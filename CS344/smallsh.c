@@ -68,7 +68,39 @@ void main(){
 	while (keepRunning == 1){
 		// checks what background processes are still running
 		isProcessRunning();					
-		getInput();		
+		// get user Input
+		// holds 4 chars of input (need 5 to include 0/)
+		char lineInput[5] = { 0 };
+
+		// for required formatting
+		printf(": ");
+		// flush the output buffer each time print is called as per assignment Hints & Resources 
+		fflush(stdout);
+		fgets(input, sizeof(input), stdin);
+		// removes new line character for nicer formatting
+		removeEndChar(input);
+		// stores input in lineInput variable
+		strncpy(lineInput, input, 4);
+
+		// if not output and & is present, run in background
+		if (strcmp(lineInput, "echo") != 0)	{
+			if (strchr(input, '&') != NULL)	{
+				runInBackground();
+			}
+		}
+		// see if command is SIGTSTP or needs to be expanded ($$ indicator)
+		if (strstr(input, "TSTP") == NULL){
+			if(strstr(input, "$$") != NULL){
+				expand();
+			}
+		}
+	
+		// see if command is SIGTSTP and catch it if it is
+		if (strstr(input, "TSTP") != NULL){
+			catchSIGTSTP();
+		}	
+		
+		// after getting input
 		// check if command is a built in command (exit, cd, status)
 		doBuiltIns();
 	}
@@ -79,7 +111,7 @@ void main(){
 // while a child running as a foreground process will terminate itself upon receiving
 // SIGINT. Number of the signal that killed this child process will be displayed after.
 void catchSIGINT(int signo){
-	printf("terminated by signal %d\n", signo);
+	printf("Terminated by signal %d\n", signo);
 	fflush(stdout);
 }
 
@@ -139,43 +171,6 @@ void isProcessRunning(){
 		}
 	}
 }
-
-
-// Reads each line from the user, checks for & (run in background command),
-// and $$ (can be expanded). Formats smallsh command line with ":" on each line.
-void getInput(){
-	// holds 4 chars of input (need 5 to include 0/)
-	char lineInput[5] = { 0 };
-
-	// for required formatting
-	printf(": ");
-	// flush the output buffer each time print is called as per assignment Hints & Resources 
-	fflush(stdout);
-	fgets(input, sizeof(input), stdin);
-	// removes new line character for nicer formatting
-	removeEndChar(input);
-	// stores input in lineInput variable
-	strncpy(lineInput, input, 4);
-
-	// if not output and & is present, run in background
-	if (strcmp(lineInput, "echo") != 0)	{
-		if (strchr(input, '&') != NULL)	{
-			runInBackground();
-		}
-	}
-	// see if command is SIGTSTP or needs to be expanded ($$ indicator)
-	if (strstr(input, "TSTP") == NULL){
-		if(strstr(input, "$$") != NULL){
-			expand();
-		}
-	}
-	
-	// see if command is SIGTSTP and catch it if it is
-	if (strstr(input, "TSTP") != NULL){
-		catchSIGTSTP();
-	}
-}
-
 
 // Removes newline character for nicer look
 void removeEndChar(char *removeItem){
