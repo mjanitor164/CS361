@@ -252,63 +252,60 @@ void expandFromChild()
 // as comments (denoted by #)
 void doBuiltIns()
 {
-	// Handles cd built-in
-	if (strncmp(input, "cd", 2) == 0)
+	// handles cd built-in
+	if (strncmp(input, "cd", 2) == 0)			
 	{
-		char directoryArray[MAX_CMD_LENGTH];
+		// array for directories
+		char cwd[MAX_CMD_LENGTH];
 		char *newPath;
 		// gets current directory
-		getdirectoryArray(directoryArray, sizeof(directoryArray));
-		// need to get current directory and add it to path
+		getcwd(cwd, sizeof(cwd));
+		// adds cd to path
 		newPath = strstr(input, " ");
-		// we need to format a new path before we can use it
 		if (newPath)
+		// this handles the formatting needed to change directory into the new directory
 		{
 			newPath++;
-			strcat(directoryArray, "/");
-			strcat(directoryArray, newPath);
-			// change directory to that new path (now directoryArray)
-			chdir(directoryArray);
+			strcat(cwd, "/");
+			strcat(cwd, newPath);
+			chdir(cwd);	
 		}
-		// if not a new path, we just get the home directory
+		// if not a new directory, just use home directory
 		else
 		{
 			chdir(getenv("HOME"));
 		}
-		// now we get the new current directory
-		getdirectoryArray(directoryArray, sizeof(directoryArray));
-		// output the directory (required to match assignment output formatting)
-		printf("%s\n", directoryArray);
+		// get new current directory and output it to terminal (as required for the assignment)
+		getcwd(cwd, sizeof(cwd));
+		printf("%s\n", cwd);
 		fflush(stdout);
 	}
-	// handles status built-in
+	// handles built-in status command
 	else if (strcmp(input, "status") == 0)
 	{
-		// output the exit value of status (required to match assignment output formatting)
+		// print the exit value to terminal as required for the assignment
 		printf("exit value %d\n", status);
 		fflush(stdout);
 	}
-	// handles the exit built-in
+	// handles the built-in exit command
 	else if (strcmp(input, "exit") == 0)
 	{
-		// setting this variable to 0 will end the program
+		// sets this variable to 0 which will end the program
 		keepRunning = 0;
 	}
-	// handles comments (denoted by # or a space)
+	// causes shell to ignore comments (ones with # or blank spaces)
 	else if (strncmp(input, "#", 1) == 0 || strcmp(input, " ") == 0)
 	{
-		// do nothing
+		//Do nothing
 	}
-	// if nothing else, we fork the process
+	// if nothing else, we fork
 	else
 	{
 		forkProcess();
 	}
-
-	// reset this flag in case it was flagged earlier
-	backgroundFlag = false;							
+	// reset this flag for later in case it was flagged earlier
+	backgroundFlag = false;					
 }
-
 
 // Forks the process to create a child process
 // Contains logic to cause the parent to wait or continue
@@ -340,24 +337,27 @@ void forkProcess()
 		// run commands for the child
 		executeCommand();
 	}
-	/*************************************************************************************************************/
-	else //PARENT
+	else
 	{
-		if (backgroundFlag == true)					//Check if child is running in the background
+		// if process is running in background, we add the child to the processes array,
+		// increase process counter, ensure parent won't wait for child, reset background
+		// flag, and output message to terminal with child's pid
+		if (backgroundFlag == true)
 		{
-			processes[numProcesses] = initPid;	//Add child to background array
-			numProcesses++;						//Add one to the process counter
-			waitpid(initPid, &childExitMethod, WNOHANG);	//Dont let the parent wait for child
-			backgroundFlag = false;					//reset background flag
-
-			printf("background pid is %d\n", initPid);		//Output the childs PID
+			processes[numProcesses] = initPid;
+			numProcesses++;	
+			waitpid(initPid, &childExitMethod, WNOHANG);
+			backgroundFlag = false;	
+			printf("background pid is %d\n", initPid);
 			fflush(stdout);
 		}
 		else
+		// if not in background, cause the parent to wait for the child process to finish first,
+		// check for errors, and set error flag if so
 		{
-			waitpid(initPid, &childExitMethod, 0);	//Let the parent wait for child process to finish
-			if (WIFEXITED(childExitMethod))			//Check if there was a problem 
-				status = WEXITSTATUS(childExitMethod);	//Set status to error
+			waitpid(initPid, &childExitMethod, 0);
+			if (WIFEXITED(childExitMethod))
+				status = WEXITSTATUS(childExitMethod);
 		}
 	}
 }
@@ -370,59 +370,77 @@ void executeCommand()
 {
 	char* commandArgv[512];
 	int count = 0;
+	int i = 0;
+	int std = 2;
 	int redirect = 0;
 	int fileDesc;
-	int i = 0;
-	int std = 2; //FP Error
 
-	commandArgv[0] = strtok(input, " ");			//Get the Bash command from file
-
-	while (commandArgv[count] != NULL)				//While not at the end
+	// gets the command
+	commandArgv[0] = strtok(input, " ");
+	// processes all of the commands
+	while (commandArgv[count] != NULL)
 	{
-		count++;									//add one to count
-		commandArgv[count] = strtok(NULL, " ");		//Add command to array
+		count++;
+		// add the command to the array									
+		commandArgv[count] = strtok(NULL, " ");
 	}
-
-	while (count != 0)								//Loop while there is still data
+	// keep going while there is still data to parse
+	while (count != 0)
 	{
-		if (strcmp(commandArgv[i], "<") == 0)		//Check redirect
+		// need to check for read-only instruction
+		if (strcmp(commandArgv[i], "<") == 0)
 		{
-			fileDesc = open(commandArgv[i + 1], O_RDONLY, 0);	//Open File ReadOnly
-			if (fileDesc < 0)						//Check if open file was successful
+			// if so open file as readonly and check for errors before exiting
+			fileDesc = open(commandArgv[i + 1], O_RDONLY, 0);
+			if (fileDesc < 0)
 			{
-				printf("cannot open %s for input\n", commandArgv[i + 1]);	//Output error
+				// error message
+				printf("cannot open %s for input\n", commandArgv[i + 1]);
 				fflush(stdout);
 				exit(1);
 			}
 			else
+			// if no errors, set pointer to stdin and set redirect flag
 			{
-				std = 0;//0 = stdin					//Set File Pointer to stdin
-				redirect = 1;						//There is a redirect
+				std = 0;
+				redirect = 1;
 			}
 		}
-		else if (strcmp(commandArgv[i], ">") == 0) //Check redirect
+		// check for write-only instruction
+		else if (strcmp(commandArgv[i], ">") == 0)
 		{
-			fileDesc = open(commandArgv[i + 1], O_CREAT | O_WRONLY, 0755);  //Create File in WriteOnly
-			std = 1; //1 = stdout					//Set File Pointer to stdout
-			redirect = 1;							//There is a redirect
+			// if so open file as writeonly and set pointer to stdout
+			fileDesc = open(commandArgv[i + 1], O_CREAT | O_WRONLY, 0755);
+			std = 1;
+			redirect = 1;
 		}
 
-		if (redirect == 1) //Common output between < and >
+		// if we need to do output redirection
+		if (redirect == 1)
 		{
+			// handles output redirection as instructed in assignment specs
 			dup2(fileDesc, std);
-			commandArgv[i] = 0;						//Remove the redirection from array
-			execvp(commandArgv[0], commandArgv);	//Call exec with based on redirect
-			close(fileDesc);						//Close file
+			// clear it from the array
+			commandArgv[i] = 0;
+			// then run execvp after
+			execvp(commandArgv[0], commandArgv);
+			// close the file to clean up mess
+			close(fileDesc);
 		}
 
-		count--;									//Decrement counter
-		i++;										//Move to next element
-		redirect = 0;								//Reset redirect
-		std = -2;									//Reset to FP error
+		// handle counters
+		count--;
+		i++;
+		// set redirect to 0 now that it has been handled
+		redirect = 0;
+		// reset to fp error
+		std = -2;
 	}
-	if(status=execvp(commandArgv[0], commandArgv) != 0); //The command was not a redirect. Execute the command
+	// if command was not a redirect, execute it normally
+	if(status=execvp(commandArgv[0], commandArgv) != 0);
 	{
-		printf("%s: no such file or directory\n", input);	//If error then ouput issue
-		exit(status);										//exit with error
+		// displays error if error occurred
+		printf("%s: no such file or directory\n", input);
+		exit(status);
 	}
 }
