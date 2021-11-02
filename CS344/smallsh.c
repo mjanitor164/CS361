@@ -22,13 +22,13 @@
 // Function prototypes
 void catchSIGINT(int signo);
 void catchSIGTSTP();
-void isRunningProcess();
+void isProcessRunning();
 void getInput();
 void removeEndChar(char *removeItem);
 void runInBackground();
 void expand();
 void expandFromChild();
-void runBuiltInCommands();
+void doBuiltIns();
 void forkProcess();
 void executeCommand();
 
@@ -47,7 +47,6 @@ bool sigtstpFlag = false;
 int sigNum = 0;
 pid_t initPid = -1;
 int childExitMethod = -1;
-
 
 
 void main()
@@ -69,82 +68,83 @@ void main()
 
 	while (keepRunning == 1)
 	{
-		isRunningProcess();						//Check up on the background processes
-		getInput();							//Call function to get console input
-		runBuiltInCommands();								//Call and check built in commands first
+		// checks what background processes are still running
+		isProcessRunning();					
+		getInput();		
+		// check if command is a built in command (exit, cd, status)
+		doBuiltIns();
 	}
 }
 
-/*******************************************
-*				catchSIGINT
-* This function is used to catch the SIGINT
-* signal.  Insteal of termination the signal
-* is ignored and a terminatation number is
-* output to the user.
-********************************************/
+
+// Catches SIGINT (CTRL+C). Parent process, child background processes all ignore SIGINT,
+// while a child running as a foreground process will terminate itself upon receiving
+// SIGINT. Number of the signal that killed this child process will be displayed after.
 void catchSIGINT(int signo)
 {
 	printf("terminated by signal %d\n", signo);
 	fflush(stdout);
 }
 
-/*******************************************
-*				catchSIGTSTP
-* This function is used to catch the SIGTSTP
-* signal. The signal will disable background
-* proccesses and display the new consition to
-* the user.
-********************************************/
+// Catches SIGTSTP (CTRL+Z). Children running in foreground and background will ignore SIGTSTP,
+// while the parent process running the shell will toggle foreground-only mode on and off.
+// If on, turns off, if off, turns on. Foreground-only mode forces all new processes to be run in the
+// foreground, even ones specified to be background processes with &.
 void catchSIGTSTP()
 {
+	// if flag is false, that means that foreground-only mode is off and we turn it on (it is toggled)
 	if (sigtstpFlag == false)
 	{
-		sigNum = 0;								//Set the sigNum to 0. For new run
-		backgroundFlag = false;						//Background commands will not work
-		sigtstpFlag = true;							//The shell recieved a signal
+		// resets sigNum in case of previous SIGTSTP
+		sigNum = 0;
+		backgroundFlag = false;
+		// sets flag to true so we know we received the SIGTSTP
+		sigtstpFlag = true;
 
 		printf("Entering foreground-only mode (& is now ignored)\n");
 		fflush(stdout);
 
-		sigNum++;								//Add one to the counter
+		// keeps track of signal count
+		sigNum++;								
 	}
-	else  //Exiting foreground-only mode
+	// otherwise, foreground-only mode is on and we turn it off
+	else
 	{
-		sigtstpFlag = false;						//Reset the flag
+		// resets the flag for later
+		sigtstpFlag = false;					
 
 		printf("Exiting foreground-only mode\n");
 		fflush(stdout);
 
-		sigNum++;								//Add one to the counter
+		// keeps track of signal count
+		sigNum++;
 	}
 }
 
-/*******************************************
-*				isRunningProcess
-* This function is used to check on the
-* background processes.  The processes ID's
-* were placed into an array.  When ran, the
-* parent can see how the child exited.  This
-* is because the parent does not wait on
-* the background to finish.  If there is an
-* terminated signal then it will be displayed
-* here.
-********************************************/
-void isRunningProcess()
+
+// checks on background processes to see which are still running, since
+// parent runs asynchronously. Displays a termination message including
+// pid if a process was terminated.
+void isProcessRunning()
 {
 	int i;
 
-	for (i = 0; i < numProcesses; i++)				//Loop through each element
+	for (i = 0; i < numProcesses; i++)	
 	{
-		if (waitpid(processes[i], &childExitMethod, WNOHANG) > 0)	//Parent process shouldn�t wait
+		// if waiting
+		if (waitpid(processes[i], &childExitMethod, WNOHANG) > 0)
 		{
-			if (WIFSIGNALED(childExitMethod))			//Check if child process terminated because it received a signal
+			// if child process was terminated
+			if (WIFSIGNALED(childExitMethod))
 			{
-				printf("background pid terminated is %d\n", processes[i]);			//Child PID	
-				printf("terminated by signal %d\n", WTERMSIG(childExitMethod));		//Signal number
+				// displays pid of child as well as terminating signal number
+				printf("background pid terminated is %d\n", processes[i]);
+				printf("terminated by signal %d\n", WTERMSIG(childExitMethod));
 			}
-			if (WIFEXITED(childExitMethod))				//Check if child process terminated normally
+			// check if process was terminated normally
+			if (WIFEXITED(childExitMethod))
 			{
+				// prints in this format as per sample program execution
 				printf("exit value %d\n", WEXITSTATUS(childExitMethod));
 			}
 		}
@@ -255,12 +255,12 @@ void expandFromChild()
 }
 
 /*******************************************
-*				runBuiltInCommands
+*				doBuiltIns
 * This function is used to orginize and use 
 * the built in shell commands.  Such as cd, 
 * status, exit, and #.
 ********************************************/
-void runBuiltInCommands()
+void doBuiltIns()
 {
 	if (strncmp(input, "cd", 2) == 0)				//CD command
 	{
