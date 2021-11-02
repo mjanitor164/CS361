@@ -151,194 +151,196 @@ void isProcessRunning()
 	}
 }
 
-/*******************************************
-*				getInput
-* This function is used to print a : to the
-* console.  It will also read each line from 
-* the user or script file. This function also
-* checks certain conditions to see if 
-* a process is eligle to be ran in the 
-* background and it the $$ can be expanded.
-********************************************/
+
+// Reads each line from the user, checks for & (run in background command),
+// and $$ (can be expanded). Formats smallsh command line with ":" on each line.
 void getInput()
 {
-	char isOutput[5] = { 0 };						//Small array to hold the first 4 char of input
+	// holds 4 chars of input (need 5 to include 0/)
+	char lineInput[5] = { 0 };
 
+	// for required formatting
 	printf(": ");
+	// flush the output buffer each time print is called as per assignment Hints & Resources 
 	fflush(stdout);
-	fgets(input, sizeof(input), stdin);				//Grab input line
-	removeEndChar(input);						//Remove Newline char
+	fgets(input, sizeof(input), stdin);
+	// removes new line character for nicer formatting
+	removeEndChar(input);
+	// stores input in lineInput variable
+	strncpy(lineInput, input, 4);
 
-	strncpy(isOutput, input, 4);					//Get the first 4 chars in input
-
-	if (strcmp(isOutput, "echo") != 0)				//Check if the input is output versus command
+	// if not output and & is present, run in background
+	if (strcmp(lineInput, "echo") != 0)	
 	{
-		if (strchr(input, '&') != NULL)				//Check if this will run in the background
+		if (strchr(input, '&') != NULL)	
 		{
-			runInBackground();						//Call runInBackground
+			runInBackground();
 		}
 	}
-	if (strstr(input, "TSTP") == NULL)				//Check to make sure the command is not SIGTSTP
-		if (strstr(input, "$$") != NULL)			//Check if command will be expanded
-			expand();								//Call expand
+	// see if command is SIGTSTP or needs to be expanded ($$ indicator)
+	if (strstr(input, "TSTP") == NULL)
+		if (strstr(input, "$$") != NULL)
+			expand();
 	
-	if (strstr(input, "TSTP") != NULL)				//Check to if command is SIGTSTP
-		catchSIGTSTP();								//Catch the signal
+	// see if command is SIGTSTP and catch it if it is
+	if (strstr(input, "TSTP") != NULL)
+		catchSIGTSTP();	
 }
 
-/*******************************************
-*			removeEndChar
-* This function is used to remove the newline
-* character at the end of each string.  This
-* will make outputting more uniform.
-********************************************/
+
+// Removes newline character for nicer look
 void removeEndChar(char *removeItem)
 {
-	removeItem[strcspn(removeItem, "\n")] = '\0';	//Change the found newline character 
+	// change to null char
+	removeItem[strcspn(removeItem, "\n")] = '\0';
 }
 
-/*******************************************
-*				runInBackground
-* This function is used to see if the proccess
-* will run in the background.  It will set the
-* background flag and remove the & from the 
-* string so that exec can accept the command.
-********************************************/
+
+// Checks to see if process is able to be run in the background,
+// sets a flag if so
 void runInBackground()
 {
-	char backgroundCommand[MAX_CMD_LENGTH] = { 0 };		//Create and initialize array to store input
-	int size = (strlen(input) - 2);					//Get the length of input and reduce by 2 to remove & and space
-
-	if(sigtstpFlag == false)						//If there is no signal caught then we can enter background mode
-		backgroundFlag = true;						//Run command in background
-	
-	strncpy(backgroundCommand, input, size);		//Copy input into backgroundCommand minus 2 chars
-	strcpy(input, backgroundCommand);				//Copy backgroundCommand back to input with correct format
+	char backgroundCommand[MAX_CMD_LENGTH] = { 0 };
+	// input string needs to be modified to remove the & symbol (because background process)
+	// as well as the space
+	int size = (strlen(input) - 2);					
+	// Runs in background if there's no SIGTSTP
+	if(sigtstpFlag == false)
+		backgroundFlag = true;
+	// Adds this process into the backgroundCommand array minus last two characters
+	strncpy(backgroundCommand, input, size);
+	strcpy(input, backgroundCommand);
 }
 
-/*******************************************
-*				expand
-* This function is used to expand $$ into 
-* a process.  This will copy the string and
-* modify the string based on the lengeth.
-* The $$ will be removed and then replaced
-* with the shell PID.
-********************************************/
+// Expands any instance of $$ in a command into the process ID of of the smallsh itself
+// This copies the string and modifies it based on the length
 void expand()
 {
-	char expandCommand[MAX_CMD_LENGTH] = { 0 };			//Create and initialize array to store input
-	int size = (strlen(input) - 2);					//Get the length of input and reduce by 2 to remove $$
-
-	strncpy(expandCommand, input, size);			//Copy input into expandCommand minus 2 chars
-	strcpy(input, expandCommand);					//Copy expandCommand back to input with correct format
-	sprintf(expandCommand, "%d", getppid());		//Add Shell PID to the end of string
-	strcat(input, expandCommand);					//Cat the modification to input
+	char inputArray[MAX_CMD_LENGTH] = { 0 };
+	// sets size to be length minus 2--removing "$$"
+	int size = (strlen(input) - 2);
+	// put this input into inputArray
+	strncpy(inputArray, input, size);
+	// put the input back into input now that it's correctly formatted
+	strcpy(input, inputArray);
+	// append the shell's pid
+	sprintf(inputArray, "%d", getppid());
+	// concat the pid to input
+	strcat(input, inputArray);
 }
 
-/*******************************************
-*				expandFromChild
-* This function is used to expand $$ into
-* a process.  This uses the same logic as 
-* expand, but instead of using the Shell 
-* PID this is called after the fork and will 
-* use the child PID.
-********************************************/
+// Expands $$ into a process like expand() does, but this function is called
+// after the fork instead and uses the child's pid.
 void expandFromChild()
 {
-	char expandFromChild[MAX_CMD_LENGTH] = { 0 };				//Create and initialize array to store input
-	int size = (strlen(input) - 11);				//Get the length of input and reduce by 11 to remove signal and $$
-
-	strncpy(expandFromChild, input, size);				//Copy input into expandFromChild minus 11 chars
-	strcpy(input, expandFromChild);						//Copy expandFromChild back to input with correct format
-	sprintf(expandFromChild, "%d", getpid());			//Add child PID to the end of string
-	strcat(input, expandFromChild);						//Cat the modification to input
+	// input array
+	char expandFromChild[MAX_CMD_LENGTH] = { 0 };
+	//  modify length--must be size minus 11--this removes the signal and "$$"
+	int size = (strlen(input) - 11);
+	// put this input into array with correct size
+	strncpy(expandFromChild, input, size);
+	// puts this back into input now that it's correctly formatted
+	strcpy(input, expandFromChild);
+	// append the child's pid
+	sprintf(expandFromChild, "%d", getpid());
+	// conct the pid to input
+	strcat(input, expandFromChild);
 }
 
-/*******************************************
-*				doBuiltIns
-* This function is used to orginize and use 
-* the built in shell commands.  Such as cd, 
-* status, exit, and #.
-********************************************/
+
+// Processes the build in shell commands (cd, status, exit), as well
+// as comments (denoted by #)
 void doBuiltIns()
 {
-	if (strncmp(input, "cd", 2) == 0)				//CD command
+	// Handles cd built-in
+	if (strncmp(input, "cd", 2) == 0)
 	{
-		char cwd[MAX_CMD_LENGTH];							//Create directory array
+		char directoryArray[MAX_CMD_LENGTH];
 		char *newPath;
-		getcwd(cwd, sizeof(cwd));					//Get the current directory
-
-		newPath = strstr(input, " ");				//Get the cd and add to path
+		// gets current directory
+		getdirectoryArray(directoryArray, sizeof(directoryArray));
+		// need to get current directory and add it to path
+		newPath = strstr(input, " ");
+		// we need to format a new path before we can use it
 		if (newPath)
 		{
 			newPath++;
-			strcat(cwd, "/");						//Cat / to end of current directory 
-			strcat(cwd, newPath);					//Cat the new path and current directory
-			chdir(cwd);								//Change directory
+			strcat(directoryArray, "/");
+			strcat(directoryArray, newPath);
+			// change directory to that new path (now directoryArray)
+			chdir(directoryArray);
 		}
+		// if not a new path, we just get the home directory
 		else
 		{
-			chdir(getenv("HOME"));					//Get home directory
+			chdir(getenv("HOME"));
 		}
-
-		getcwd(cwd, sizeof(cwd));					//Get the new current directory 
-		printf("%s\n", cwd);						//Output the directory
+		// now we get the new current directory
+		getdirectoryArray(directoryArray, sizeof(directoryArray));
+		// output the directory (required to match assignment output formatting)
+		printf("%s\n", directoryArray);
 		fflush(stdout);
 	}
-	else if (strcmp(input, "status") == 0)			//Status command
+	// handles status built-in
+	else if (strcmp(input, "status") == 0)
 	{
-		printf("exit value %d\n", status);		//Output the exit value of status
+		// output the exit value of status (required to match assignment output formatting)
+		printf("exit value %d\n", status);
 		fflush(stdout);
 	}
-	else if (strcmp(input, "exit") == 0)			//Exit command
+	// handles the exit built-in
+	else if (strcmp(input, "exit") == 0)
 	{
-		keepRunning = 0;									//End the program
+		// setting this variable to 0 will end the program
+		keepRunning = 0;
 	}
-	else if (strncmp(input, "#", 1) == 0 || strcmp(input, " ") == 0)  //Comment command
+	// handles comments (denoted by # or a space)
+	else if (strncmp(input, "#", 1) == 0 || strcmp(input, " ") == 0)
 	{
-		//Do nothing if comment
+		// do nothing
 	}
+	// if nothing else, we fork the process
 	else
 	{
-		forkProcess();							//Call and get ready to fork
+		forkProcess();
 	}
 
-	backgroundFlag = false;							//Reset background flag if flaged for built-in commands.
+	// reset this flag in case it was flagged earlier
+	backgroundFlag = false;							
 }
 
-/*******************************************
-*				forkProcess
-* This function is used to fork the program
-* and creat child processes that can either
-* run in the background or foreground.  
-* These children are used to run unix 
-* commands. Such as < > and more through 
-* exec. Depending on how the child is 
-* running, Background or Foreground, the
-* parent will wait for the child or continue.
-********************************************/
+
+// Forks the process to create a child process
+// Contains logic to cause the parent to wait or continue
+// when the child is made, depending on if the child is a 
+// background or foreground process
 void forkProcess()
 {
-	initPid = fork();								//Fork the process Create a child process
+	initPid = fork();
 
-	if (initPid < 0)								//Check if the process forked without an error
+	// check to make sure it forked correctly (error returns negative number)
+	if (initPid < 0)
 	{
 		printf("Error Forking\n");
 		fflush(stdout);
 		exit(1);
 	}
-	else if (initPid == 0)							//Process forked fine
+	else if (initPid == 0)
 	{
-		if (sigNum > 0)							//Check if SIGTSTP has been flagged
+		// check for sigtstp flag
+		if (sigNum > 0)	
 		{
-			if (strstr(input, "kill") != NULL)		//Check if there is a kill command out for the child
+			// make sure there isn't a bounty out for the child process
+			if (strstr(input, "kill") != NULL)
 			{
-				expandFromChild();						//Call kill command to add child PID to input
+				expandFromChild();
 			}
 
 		}
-		executeCommand();								//Move on to commands for child
+		// run commands for the child
+		executeCommand();
 	}
+	/*************************************************************************************************************/
 	else //PARENT
 	{
 		if (backgroundFlag == true)					//Check if child is running in the background
@@ -360,11 +362,10 @@ void forkProcess()
 	}
 }
 
-/*******************************************
-*				executeCommand
-* This function is used to control the child
-* processes actions.  
-********************************************/
+
+// Once a child process is made, executeCommand runs the command.
+// This reads the full command, opens or creates files if directed,
+// sets pointers, and handles errors.
 void executeCommand()
 {
 	char* commandArgv[512];
