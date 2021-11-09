@@ -1,0 +1,56 @@
+import requests
+import time
+from bs4 import BeautifulSoup
+from requests_html import HTMLSession
+import pandas as pd
+
+CS361_URL = 'https://oregonstate.instructure.com/courses/1877222/assignments/syllabus'
+CS372_URL = 'https://oregonstate.instructure.com/courses/1830291/assignments/syllabus'
+
+
+# Takes a url containing a syllabus and returns a dataframe object
+# with tasks, dates, and times.
+def scrape_canvas(url):
+    session = HTMLSession()
+    r = session.get(CS372_URL)
+    r.html.render()
+
+    soup = BeautifulSoup(r.html.raw_html, "html.parser")
+    table = soup.find(id="syllabus")
+    rows = table.find_all('tr')
+
+    last_date = None
+    dates = []
+    tasks = []
+    times = []
+
+    for row in rows:
+        cells = row.find_all('td')
+
+        # some rows only have 2 columns if multiple assignments are due on a given day
+        if len(cells) == 3:
+            td_count = 1
+        elif len(cells) == 2:
+            td_count = 2
+            dates.append(last_date)
+
+        for cell in cells:
+            cur_text = cell.text.strip().replace('\n', '')
+            # Date column (contains due date)
+            if td_count == 1:
+                dates.append(cur_text)
+                last_date = cur_text
+            # Details column (contains task name)
+            elif td_count == 2:
+                cur_text = cur_text.split("Assignment", 1)[-1].strip()
+                cur_text = cur_text.replace("Calendar Event", "").strip()  # remove icon
+                cur_text = cur_text.replace("(3 students)", "").strip()  # remove extraneous trailing info
+                tasks.append(cur_text)
+            # Due column (contains due by time)
+            elif td_count == 3:
+                times.append(cur_text)
+            td_count += 1
+
+    syllabus_df = pd.DataFrame({'Dates': dates, 'Tasks': tasks, 'Times': times})
+
+    return syllabus_df
