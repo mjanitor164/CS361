@@ -11,6 +11,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 
+# Takes no parameters and returns the program GUI, complete with widget functionality.
 def create_GUI():
     # Creates a PyQt5 application
     app = QApplication([])
