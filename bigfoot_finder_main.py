@@ -11,16 +11,10 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 
-# Takes no parameters and returns the program GUI, complete with widget functionality.
-def create_GUI():
-    # Creates a PyQt5 application
-    app = QApplication([])
-    app.setStyle("Fusion")
+# Takes the application as a param and sets GUI coloring to create a "dark mode" theme
+def set_dark_mode(app):
     dark_palette = QPalette()
-    color = QColor
-    qt = Qt
 
-    # ----Gives a "dark mode" vibe----#
     dark_palette.setColor(QPalette.Window, QColor(53, 53, 53))
     dark_palette.setColor(QPalette.WindowText, Qt.white)
     dark_palette.setColor(QPalette.Base, QColor(25, 25, 25))
@@ -39,6 +33,86 @@ def create_GUI():
 
     app.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
 
+
+# Creates a button that closes the application when clicked
+def create_close_button(grid_layout):
+    # ----Function to close the program for close button----#
+    def closeButtonClick(window):
+        exit()
+
+    closeButton = QPushButton("Close")
+    grid_layout.addWidget(closeButton, 1, 3)
+    closeButton.clicked.connect(closeButtonClick)
+
+
+def create_twitter_widget(grid_layout):
+    twitterData = QGroupBox("From Twitter:")
+    twitterData.setAlignment(QtCore.Qt.AlignCenter)
+    grid_layout.addWidget(twitterData, 2, 0)
+    news_box = QVBoxLayout()
+    twitterData.setLayout(news_box)
+    # Adds dummy data to this news widget. Update later to scrape actual data
+    add_twitter_dummy_data(news_box)
+
+
+def add_twitter_dummy_data(news_box):
+    news_one = QLabel(
+        "BFRO UPDATES @BFRO_Updates--10/13\nJust posted on BFRO web site:\n"
+        "Sept 22, 2021 ; Texas (Marion County)\n"
+        "Northeast corner of the state, near Lousiana\n border. Class B sighting by motorist in morning \n"
+        "daylight.\nFor details and Google Maps pin see report here:\n"
+        "http://bfro.net/GDB/show_report.asp?id=70712\nDiscussion: https://bit.ly/3mN8F9l")
+    news_one.setAlignment(QtCore.Qt.AlignCenter)
+    news_box.addWidget(news_one)
+    news_two = QLabel(
+        "BFRO UPDATES @BFRO_Updates--10/9\nJust posted: March '21, Class A\n"
+        " daylight sighting from eastern South Carolina.\n"
+        "Witness: A long haul trucker who was delivering\n a load to a nearby steel plant, driving near \n"
+        "the Cooper River (Francis Marion National Forest)\n"
+        "which was flooded at the time. \nSee https://bit.ly/3FyoI3C")
+    news_two.setAlignment(QtCore.Qt.AlignCenter)
+    news_box.addWidget(news_two)
+    news_three = QLabel(
+        "BFRO UPDATES @BFRO_Updates--10/13\nJust posted on BFRO web site:\nSept 22, 2021 ; Texas (Marion County)\n"
+        "Northeast corner of the state, near Lousiana\n border. Class B sighting by motorist in morning \ndaylight.\n"
+        "For details and Google Maps pin see report here:\n"
+        "http://bfro.net/GDB/show_report.asp?id=70712\nDiscussion: https://bit.ly/3mN8F9l")
+    news_three.setAlignment(QtCore.Qt.AlignCenter)
+    news_box.addWidget(news_three)
+
+
+# Function to display images for the GUI. Currently only has one image
+def displayImages(grid_layout):
+    bigfootImage = QLabel("Bigfoot")
+    bigfootImage.setAlignment(QtCore.Qt.AlignCenter)
+    bigfootImage.setPixmap(QtGui.QPixmap('spookyedit.jpeg'))
+    grid_layout.addWidget(bigfootImage, 2, 3)
+
+
+# Function to open browser window with wikipedia's bigfoot page
+def display_wiki(grid_layout):
+    # Function that opens the wiki bigfoot page
+    def openBrowser():
+        webbrowser.open('https://en.wikipedia.org/wiki/Bigfoot')
+
+    wiki = QPushButton("What is Bigfoot?")
+    wiki.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
+    grid_layout.addWidget(wiki, 3, 0)
+    wiki.clicked.connect(openBrowser)
+
+
+# Creates the GUI by creating the window, formatting, and all of the widgets (elements) of the program.
+def create_GUI():
+    # Creates a PyQt5 application
+    app = QApplication([])
+    app.setStyle("Fusion")
+    color = QColor
+    qt = Qt
+    comboBox = QComboBox()
+
+    # ----Gives a "dark mode" vibe----#
+    set_dark_mode(app)
+
     # ----Creates a basic window widget to hold more widgets----#
     window = QWidget()
     window.setFixedHeight(600)
@@ -48,8 +122,6 @@ def create_GUI():
     # ----Creates a grid layout and adds widgets to the grid----#
     grid_layout = QGridLayout()
     window.setLayout(grid_layout)
-
-    # ----Set elements of grid----#
 
     # ----Recent News Label Widget----#
     twitterLabel = QLabel("Recent News")
@@ -63,11 +135,13 @@ def create_GUI():
     headerLabel.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
     grid_layout.addWidget(headerLabel, 0, 1)
 
-    # ----Function to close the program for close button----#
-    def closeButtonClick(window):
-        exit()
+    # ----Close button widget----#
+    create_close_button(grid_layout)
 
-    # ---Function to add display sighting data widget on search button click----#
+    # ----Twitter tweet news widget----#
+    create_twitter_widget(grid_layout)
+
+    # ---Uses teammate's service to scrape historical sighting data---#
     def displaySightingData():
 
         sightingData = {}
@@ -90,11 +164,9 @@ def create_GUI():
             dates.append(i["date"])
             descriptions.append(i["description"])
 
-
         sightingData['county'] = counties
         sightingData['date'] = dates
         sightingData['description'] = descriptions
-
 
         # ---Sets table data----#
         class TableView(QTableWidget):
@@ -121,41 +193,8 @@ def create_GUI():
         grid_layout.addWidget(dataTable, 2, 1)
         window.show()
 
-    # ----Close button widget----#
-    closeButton = QPushButton("Close")
-    grid_layout.addWidget(closeButton, 1, 3)
-    closeButton.clicked.connect(closeButtonClick)
-
-    # ----Twitter data widget----#
-    twitterData = QGroupBox("From Twitter:")
-    twitterData.setAlignment(QtCore.Qt.AlignCenter)
-    grid_layout.addWidget(twitterData, 2, 0)
-    news_box = QVBoxLayout()
-    twitterData.setLayout(news_box)
-
-    # ----Tweets to go inside the twutterData group box----#
-    news_one = QLabel(
-        "BFRO UPDATES @BFRO_Updates--10/13\nJust posted on BFRO web site:\nSept 22, 2021 ; Texas (Marion County)\n"
-        "Northeast corner of the state, near Lousiana\n border. Class B sighting by motorist in morning \ndaylight.\nFor details and Google Maps pin see report here:\n"
-        "http://bfro.net/GDB/show_report.asp?id=70712\nDiscussion: https://bit.ly/3mN8F9l")
-    news_one.setAlignment(QtCore.Qt.AlignCenter)
-    news_box.addWidget(news_one)
-    news_two = QLabel(
-        "BFRO UPDATES @BFRO_Updates--10/9\nJust posted: March '21, Class A\n daylight sighting from eastern South Carolina.\n"
-        "Witness: A long haul trucker who was delivering\n a load to a nearby steel plant, driving near \nthe Cooper River (Francis Marion National Forest)\n"
-        "which was flooded at the time. \nSee https://bit.ly/3FyoI3C")
-    news_two.setAlignment(QtCore.Qt.AlignCenter)
-    news_box.addWidget(news_two)
-    news_three = QLabel(
-        "BFRO UPDATES @BFRO_Updates--10/13\nJust posted on BFRO web site:\nSept 22, 2021 ; Texas (Marion County)\n"
-        "Northeast corner of the state, near Lousiana\n border. Class B sighting by motorist in morning \ndaylight.\nFor details and Google Maps pin see report here:\n"
-        "http://bfro.net/GDB/show_report.asp?id=70712\nDiscussion: https://bit.ly/3mN8F9l")
-    news_three.setAlignment(QtCore.Qt.AlignCenter)
-    news_box.addWidget(news_three)
-
-    # ---Display sighting data button Widget----#
-    comboBox = QComboBox()
-    comboBox.addItem("Display historical sighting data for: ")
+    # Creates a scrollbox for the user to select a state to display data for
+    comboBox.addItem("Display historical sighting data for:                     **takes a bit to load**")
     states = ["Alaska", "Alabama", "Arkansas", "Arizona", "California", "Colorado", "Connecticut",
               "District of Columbia",
               "Delaware", "Florida", "Georgia", "Guam", "Hawaii", "Iowa", "Idaho", "Illinois", "Indiana", "Kansas",
@@ -169,24 +208,13 @@ def create_GUI():
         comboBox.addItem(s)
     grid_layout.addWidget(comboBox, 1, 1)
     comboBox.activated[str].connect(displaySightingData)
-    # searchLabel.clicked.connect(displaySightingData)
 
     # ----Bigfoot image Widget----#
-    bigfootImage = QLabel("Bigfoot")
-    bigfootImage.setAlignment(QtCore.Qt.AlignCenter)
-    bigfootImage.setPixmap(QtGui.QPixmap('spookyedit.jpeg'))
-    grid_layout.addWidget(bigfootImage, 2, 3)
+    displayImages(grid_layout)
 
-    # ----Function to open browser for wiki page----#
-    # --NOTE: Currently opens page in browser for MVP, make this open in PyQt5 window later--#
-    def openBrowser():
-        webbrowser.open('https://en.wikipedia.org/wiki/Bigfoot')
-
-    # ----Wiki display button Widget----#
-    wiki = QPushButton("What is Bigfoot?")
-    wiki.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
-    grid_layout.addWidget(wiki, 3, 0)
-    wiki.clicked.connect(openBrowser)
+    # ----Function that creates the display wikipedia button and adds--------#
+    # ----the functionality to make it open a browser window when clicked----#
+    display_wiki(grid_layout)
 
     # Sets the layout now that all widgets are added
     window.setLayout(grid_layout)
@@ -198,4 +226,12 @@ def create_GUI():
     app.exec()
 
 
-create_GUI()
+def main():
+    create_GUI()
+
+
+if __name__ == "__main__":
+    main()
+
+
+
