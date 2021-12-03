@@ -81,7 +81,7 @@ def scrape_twitter(news_box):
 
     client = tweepy.Client(bearer_token=b_token)
 
-    # User id
+    # User id for the twitter user whose tweets we are scraping
     user = 873624260
 
     # This gets the tweets from the user with the specified user ID
