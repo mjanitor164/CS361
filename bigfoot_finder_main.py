@@ -11,6 +11,15 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+STATES = ["Alaska", "Alabama", "Arkansas", "Arizona", "California", "Colorado", "Connecticut",
+          "District of Columbia",
+          "Delaware", "Florida", "Georgia", "Guam", "Hawaii", "Iowa", "Idaho", "Illinois", "Indiana", "Kansas",
+          "Kentucky", "Louisiana", "Massachusetts", "Maryland", "Maine", "Michigan", "Minnesota", "Missouri",
+          "Mississippi", "Montana", "North Carolina", "North Dakota", "Nebraska", "New Hampshire", "New Jersey",
+          "New Mexico", "Nevada", "New York", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Puerto Rico",
+          "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Virginia", "Vermont",
+          "Washington", "Wisconsin", "West Virginia", "Wyoming"]
+
 
 # Takes the application as a param and sets GUI coloring to create a "dark mode" theme
 def set_dark_mode(app):
@@ -67,8 +76,8 @@ def create_twitter_widget(grid_layout):
 
 
 def scrape_twitter(news_box):
-    # token hidden for GitHub release
-    b_token = ""
+    b_token = "AAAAAAAAAAAAAAAAAAAAAHNdWAEAAAAAS1qB8F6awD%2FrS77aMMZ9VYJhg%2FQ%3D" \
+              "wHnkvOV2WmL6R6L4noZxq81Rvjd0zIaeHCY2Eq35iRIc0yEzag"
 
     client = tweepy.Client(bearer_token=b_token)
 
@@ -133,7 +142,6 @@ def display_wiki(grid_layout):
 
 # Creates the GUI by creating the window, formatting, and all of the widgets (elements) of the program.
 def create_GUI():
-
     # Creates a PyQt5 application
     app = QApplication([])
     app.setStyle("Fusion")
@@ -228,16 +236,8 @@ def create_GUI():
     # Creates a scrollbox for the user to select a state to display data for
     comboBox.addItem("Display historical sighting data for:")
     comboBox.setFont(QFont('Arial', 14))
-    states = ["Alaska", "Alabama", "Arkansas", "Arizona", "California", "Colorado", "Connecticut",
-              "District of Columbia",
-              "Delaware", "Florida", "Georgia", "Guam", "Hawaii", "Iowa", "Idaho", "Illinois", "Indiana", "Kansas",
-              "Kentucky", "Louisiana", "Massachusetts", "Maryland", "Maine", "Michigan", "Minnesota", "Missouri",
-              "Mississippi", "Montana", "North Carolina", "North Dakota", "Nebraska", "New Hampshire", "New Jersey",
-              "New Mexico", "Nevada", "New York", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Puerto Rico",
-              "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Virginia", "Vermont",
-              "Washington", "Wisconsin", "West Virginia", "Wyoming"]
 
-    for s in states:
+    for s in STATES:
         comboBox.addItem(s)
     grid_layout.addWidget(comboBox, 1, 1)
     comboBox.activated[str].connect(displaySightingData)
@@ -265,6 +265,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-
