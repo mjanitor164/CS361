@@ -76,8 +76,8 @@ def create_twitter_widget(grid_layout):
 
 
 def scrape_twitter(news_box):
-    b_token = "AAAAAAAAAAAAAAAAAAAAAHNdWAEAAAAAS1qB8F6awD%2FrS77aMMZ9VYJhg%2FQ%3D" \
-              "wHnkvOV2WmL6R6L4noZxq81Rvjd0zIaeHCY2Eq35iRIc0yEzag"
+    # Key hidden for GitHub release
+    b_token = ""
 
     client = tweepy.Client(bearer_token=b_token)
 
