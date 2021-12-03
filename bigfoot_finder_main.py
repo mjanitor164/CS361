@@ -4,6 +4,7 @@
 
 import webbrowser
 import requests
+import tweepy
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5.QtCore import Qt
@@ -41,44 +42,73 @@ def create_close_button(grid_layout):
         exit()
 
     closeButton = QPushButton("Close")
+    closeButton.setFont(QFont('Arial', 14))
     grid_layout.addWidget(closeButton, 1, 3)
     closeButton.clicked.connect(closeButtonClick)
 
 
 def create_twitter_widget(grid_layout):
-    twitterData = QGroupBox("From Twitter:")
+    # To do---set header of each tweet to twitter format as defined:
+    #  "BFRO Updates @BFRO_Updates - Nov 23"
+    twitterData = QGroupBox("@BFRO_Updates")
+    twitterData.setFont(QFont('Helvetica Neue', 12))
     twitterData.setAlignment(QtCore.Qt.AlignCenter)
     grid_layout.addWidget(twitterData, 2, 0)
     news_box = QVBoxLayout()
     twitterData.setLayout(news_box)
-    # Adds dummy data to this news widget. Update later to scrape actual data
-    add_twitter_dummy_data(news_box)
+    # setting background color for news_box
+    twitter_palette = QPalette()
+    twitter_palette.setColor(QPalette.Window, QColor("black"))
+    twitterData.setAutoFillBackground(True)
+    twitterData.setPalette(twitter_palette)
+
+    # Scrapes twitter for latest tweets from @BFRO_Updates
+    scrape_twitter(news_box)
 
 
-def add_twitter_dummy_data(news_box):
-    news_one = QLabel(
-        "BFRO UPDATES @BFRO_Updates--10/13\nJust posted on BFRO web site:\n"
-        "Sept 22, 2021 ; Texas (Marion County)\n"
-        "Northeast corner of the state, near Lousiana\n border. Class B sighting by motorist in morning \n"
-        "daylight.\nFor details and Google Maps pin see report here:\n"
-        "http://bfro.net/GDB/show_report.asp?id=70712\nDiscussion: https://bit.ly/3mN8F9l")
+def scrape_twitter(news_box):
+    # token hidden for GitHub release
+    b_token = ""
+
+    client = tweepy.Client(bearer_token=b_token)
+
+    # User id
+    user = 873624260
+
+    # This gets the tweets from the user with the specified user ID
+    tweets = client.get_users_tweets(id=user, tweet_fields=['context_annotations', 'created_at', 'geo'])
+
+    # Data structure for holding tweets
+    individual_tweets = []
+    for i in tweets.data:
+        individual_tweets.append(i.text)
+
+    # Create each of the tweet widgets
+    news_one = QLabel(individual_tweets[1])
+    news_one.setFont(QFont('Helvetica Neue', 11))
+    news_one.setWordWrap(True)
     news_one.setAlignment(QtCore.Qt.AlignCenter)
     news_box.addWidget(news_one)
-    news_two = QLabel(
-        "BFRO UPDATES @BFRO_Updates--10/9\nJust posted: March '21, Class A\n"
-        " daylight sighting from eastern South Carolina.\n"
-        "Witness: A long haul trucker who was delivering\n a load to a nearby steel plant, driving near \n"
-        "the Cooper River (Francis Marion National Forest)\n"
-        "which was flooded at the time. \nSee https://bit.ly/3FyoI3C")
+    news_two = QLabel(individual_tweets[2])
+    news_two.setFont(QFont('Helvetica Neue', 11))
+    news_two.setWordWrap(True)
     news_two.setAlignment(QtCore.Qt.AlignCenter)
     news_box.addWidget(news_two)
-    news_three = QLabel(
-        "BFRO UPDATES @BFRO_Updates--10/13\nJust posted on BFRO web site:\nSept 22, 2021 ; Texas (Marion County)\n"
-        "Northeast corner of the state, near Lousiana\n border. Class B sighting by motorist in morning \ndaylight.\n"
-        "For details and Google Maps pin see report here:\n"
-        "http://bfro.net/GDB/show_report.asp?id=70712\nDiscussion: https://bit.ly/3mN8F9l")
+    news_three = QLabel(individual_tweets[3])
+    news_three.setFont(QFont('Helvetica Neue', 11))
+    news_three.setWordWrap(True)
     news_three.setAlignment(QtCore.Qt.AlignCenter)
     news_box.addWidget(news_three)
+
+    # Setting background color for individual tweet widgets
+    twitter_palette = QPalette()
+    twitter_palette.setColor(QPalette.Window, QColor("black"))
+    news_one.setAutoFillBackground(True)
+    news_two.setAutoFillBackground(True)
+    news_three.setAutoFillBackground(True)
+    news_one.setPalette(twitter_palette)
+    news_two.setPalette(twitter_palette)
+    news_three.setPalette(twitter_palette)
 
 
 # Function to display images for the GUI. Currently only has one image
@@ -92,17 +122,18 @@ def displayImages(grid_layout):
 # Function to open browser window with wikipedia's bigfoot page
 def display_wiki(grid_layout):
     # Function that opens the wiki bigfoot page
-    def openBrowser():
+    def openWiki():
         webbrowser.open('https://en.wikipedia.org/wiki/Bigfoot')
 
     wiki = QPushButton("What is Bigfoot?")
     wiki.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
     grid_layout.addWidget(wiki, 3, 0)
-    wiki.clicked.connect(openBrowser)
+    wiki.clicked.connect(openWiki)
 
 
 # Creates the GUI by creating the window, formatting, and all of the widgets (elements) of the program.
 def create_GUI():
+
     # Creates a PyQt5 application
     app = QApplication([])
     app.setStyle("Fusion")
@@ -124,15 +155,16 @@ def create_GUI():
     window.setLayout(grid_layout)
 
     # ----Recent News Label Widget----#
-    twitterLabel = QLabel("Recent News")
+    twitterLabel = QLabel("This just in! New sightings: ")
+    twitterLabel.setFont(QFont('Arial', 12))
     twitterLabel.setAlignment(QtCore.Qt.AlignCenter)
     twitterLabel.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
     grid_layout.addWidget(twitterLabel, 1, 0)
 
     # ----Page header label Widget----#
-    headerLabel = QLabel("Bigfoot Tracker! Your go-to Bigfoot finding tool")
+    headerLabel = QLabel("Bigfoot Tracker! A Bigfoot finding tool")
     headerLabel.setAlignment(QtCore.Qt.AlignCenter)
-    headerLabel.setFont(QtGui.QFont("Times", 14, QtGui.QFont.Bold))
+    headerLabel.setFont(QtGui.QFont("Times", 18, QtGui.QFont.Bold))
     grid_layout.addWidget(headerLabel, 0, 1)
 
     # ----Close button widget----#
@@ -194,7 +226,8 @@ def create_GUI():
         window.show()
 
     # Creates a scrollbox for the user to select a state to display data for
-    comboBox.addItem("Display historical sighting data for:                     **takes a bit to load**")
+    comboBox.addItem("Display historical sighting data for:")
+    comboBox.setFont(QFont('Arial', 14))
     states = ["Alaska", "Alabama", "Arkansas", "Arizona", "California", "Colorado", "Connecticut",
               "District of Columbia",
               "Delaware", "Florida", "Georgia", "Guam", "Hawaii", "Iowa", "Idaho", "Illinois", "Indiana", "Kansas",
