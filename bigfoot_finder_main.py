@@ -253,7 +253,6 @@ def create_GUI():
     window.setLayout(grid_layout)
     window.setGeometry(300, 300, 200, 200)
 
-    # Must use this to actually display the window
     window.show()
     # Runs the app until the user closes it
     app.exec()
